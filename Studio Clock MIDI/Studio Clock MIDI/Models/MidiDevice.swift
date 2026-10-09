@@ -9,6 +9,6 @@ import CoreMIDI
 import Foundation
 
 struct MidiDevice: Identifiable, Hashable {
-    var id: MIDIEntityRef
+    var id: Int
     var name: String
 }

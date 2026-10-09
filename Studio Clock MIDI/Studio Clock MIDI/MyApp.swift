@@ -7,7 +7,7 @@ import SwiftUI
         }
         
         Settings {
-            SettingsView()
+            SettingsView().frame(minWidth: 600, minHeight: 150)
         }
     }
 }

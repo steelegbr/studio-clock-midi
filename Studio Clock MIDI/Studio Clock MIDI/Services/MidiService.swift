@@ -35,7 +35,10 @@ class MidiService: ObservableObject {
                 name = "MIDI Input \(index + 1)"
             }
             
-            devices.append(MidiDevice(id: endpoint, name: name))
+            var uniqueId: Int32 = 0
+            MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &uniqueId)
+            
+            devices.append(MidiDevice(id: Int(uniqueId), name: name))
         }
     }
 }

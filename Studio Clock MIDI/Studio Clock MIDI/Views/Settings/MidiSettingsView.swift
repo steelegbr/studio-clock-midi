@@ -9,15 +9,15 @@ import CoreMIDI
 import SwiftUI
 
 struct MidiSettingsView: View {
-    @ObservedObject var midiService = MidiService.shared
-    @State private var selectedDevice: MIDIEntityRef?
+    @ObservedObject private var midiService = MidiService.shared
+    @AppStorage(Constants.settingsMidiDeviceId) private var selectedDeviceId: Int = 0
     
     var body: some View {
         Form {
-            Picker("Device", selection: $selectedDevice) {
-                Text("Select a Device").tag(nil as MIDIEntityRef?)
+            Picker("Device", selection: $selectedDeviceId) {
+                Text("Select a Device").tag(0)
                 ForEach(midiService.devices) { device in
-                    Text(device.name).tag(Optional(device.id))
+                    Text(device.name).tag(device.id)
                 }
             }
         }
