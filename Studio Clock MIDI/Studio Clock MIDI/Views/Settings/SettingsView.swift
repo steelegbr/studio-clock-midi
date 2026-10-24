@@ -10,9 +10,6 @@ import SwiftUI
 struct SettingsView: View {
     var body: some View {
         TabView {
-            Tab("MIDI", systemImage: "pianokeys") {
-                MidiSettingsView()
-            }
             Tab("Studio Clock", systemImage: "clock") {
                 StudioClockSettingsView()
             }
