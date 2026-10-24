@@ -5,7 +5,6 @@
 //  Created by Marc Steele on 24/10/2026.
 //
 
-
 import SwiftUI
 
 struct MidiMappingsView: View {
@@ -50,8 +49,10 @@ struct MidiMappingsView: View {
                     }
 
                     if !midiService.isListening {
-                        Text("Start the MIDI Monitor first, and select your mixer.")
-                            .foregroundStyle(.secondary)
+                        Text(
+                            "Start the MIDI Monitor first, and select your mixer."
+                        )
+                        .foregroundStyle(.secondary)
                     } else if midiService.isLearning {
                         Text("Move a fader or press a button on your mixer.")
                             .foregroundStyle(.secondary)
@@ -66,7 +67,10 @@ struct MidiMappingsView: View {
                         Text(control.displayName)
                             .font(.system(.body, design: .monospaced))
 
-                        TextField("Mapping name (e.g. Mic Live)", text: $mappingName)
+                        TextField(
+                            "Mapping name (e.g. Mic Live)",
+                            text: $mappingName
+                        )
 
                         Button("Add Mapping") {
                             let name = mappingName.trimmingCharacters(
@@ -112,7 +116,9 @@ struct MidiMappingsView: View {
                                     .fontWeight(.medium)
 
                                 Text(mapping.control.displayName)
-                                    .font(.system(.caption, design: .monospaced))
+                                    .font(
+                                        .system(.caption, design: .monospaced)
+                                    )
                                     .foregroundStyle(.secondary)
                             }
                             .padding(.vertical, 3)

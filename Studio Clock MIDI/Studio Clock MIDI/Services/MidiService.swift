@@ -270,6 +270,16 @@ class MidiService: ObservableObject {
             )
         }
 
+        if isLearning,
+            let event = namedEvents.first(where: {
+                MidiControl(event: $0) != nil
+            }),
+            let control = MidiControl(event: event)
+        {
+            learnedControl = control
+            isLearning = false
+        }
+
         events.append(contentsOf: namedEvents)
 
         if events.count > maximumEvents {
