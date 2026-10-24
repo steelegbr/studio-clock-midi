@@ -8,11 +8,15 @@ import SwiftUI
 struct MidiMappingsView: View {
     @ObservedObject private var midiService = MidiService.shared
     @ObservedObject private var ruleEngine = RuleEngine.shared
+    @ObservedObject private var mappingStore = MidiMappingStore.shared
 
     @State private var mappingName = ""
-    @State private var mappings: [MidiControlMapping] = []
     @State private var targetLampSlug = "mic-live"
     @State private var threshold = 64
+
+    private var mappings: [MidiControlMapping] {
+        mappingStore.mappings
+    }
 
     private var trimmedMappingName: String {
         mappingName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -45,6 +49,13 @@ struct MidiMappingsView: View {
             VStack(alignment: .leading, spacing: 18) {
                 header
 
+                if let error = mappingStore.persistenceError {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                        .textSelection(.enabled)
+                }
+
                 learnPanel
 
                 ViewThatFits(in: .horizontal) {
@@ -66,9 +77,6 @@ struct MidiMappingsView: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(minWidth: 560, minHeight: 500)
-        .onAppear {
-            ruleEngine.setMappings(mappings)
-        }
         .onDisappear {
             midiService.cancelLearning()
         }
@@ -263,9 +271,7 @@ struct MidiMappingsView: View {
             threshold: threshold
         )
 
-        mappings.append(mapping)
-        ruleEngine.setMappings(mappings)
-
+        mappingStore.add(mapping)
         mappingName = ""
     }
 
@@ -356,8 +362,7 @@ struct MidiMappingsView: View {
     }
 
     private func removeMapping(_ mapping: MidiControlMapping) {
-        mappings.removeAll { $0.id == mapping.id }
-        ruleEngine.setMappings(mappings)
+        mappingStore.remove(id: mapping.id)
     }
 
     // MARK: - Calculated lamp states
