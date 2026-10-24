@@ -281,6 +281,7 @@ class MidiService: ObservableObject {
         }
 
         events.append(contentsOf: namedEvents)
+        RuleEngine.shared.process(namedEvents)
 
         if events.count > maximumEvents {
             events.removeFirst(events.count - maximumEvents)

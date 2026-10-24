@@ -29,16 +29,12 @@ struct MidiControl: Codable, Hashable {
     }
 
     init?(event: MidiEvent) {
-        let messageType = event.status & 0xF0
-
-        switch messageType {
+        switch event.status & 0xF0 {
         case 0x80, 0x90:
-            // Note Off and Note On represent the same physical note.
             kind = .note
         case 0xB0:
             kind = .controlChange
         default:
-            // Ignore MIDI messages that aren't useful for our first mappings.
             return nil
         }
 
@@ -51,4 +47,10 @@ struct MidiControlMapping: Identifiable, Codable {
     var id = UUID()
     var name: String
     var control: MidiControl
+
+    // The Django lamp slug, not its human-readable label.
+    var targetLampSlug: String = "mic-live"
+
+    // MIDI CC values range from 0 to 127.
+    var threshold: Int = 64
 }
