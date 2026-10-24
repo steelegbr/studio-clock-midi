@@ -5,7 +5,7 @@ import SwiftUI
         WindowGroup {
             ContentView()
         }
-        
+
         Settings {
             SettingsView().frame(minWidth: 600, minHeight: 150)
         }

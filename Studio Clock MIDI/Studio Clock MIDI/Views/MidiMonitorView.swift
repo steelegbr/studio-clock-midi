@@ -5,7 +5,6 @@
 //  Created by Marc Steele on 24/10/2026.
 //
 
-
 import SwiftUI
 
 struct MidiMonitorView: View {
@@ -144,7 +143,8 @@ struct MidiMonitorView: View {
 
     private var statusText: String {
         if midiService.isListening {
-            return "Listening to \(midiService.listeningDeviceName ?? "MIDI input")"
+            return
+                "Listening to \(midiService.listeningDeviceName ?? "MIDI input")"
         }
 
         return "Not listening"

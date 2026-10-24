@@ -9,8 +9,9 @@ import SwiftUI
 
 struct StudioClockSettingsView: View {
     @AppStorage(Constants.settingsStudioClockApiKey) private var apiKey = ""
-    @AppStorage(Constants.settingsStudioClockServer) private var server = "clock.example.org"
-    
+    @AppStorage(Constants.settingsStudioClockServer) private var server =
+        "clock.example.org"
+
     var body: some View {
         Form {
             TextField("Studio Clock Server", text: $server)
