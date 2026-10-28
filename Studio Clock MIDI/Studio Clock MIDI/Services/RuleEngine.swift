@@ -16,9 +16,8 @@ final class RuleEngine: ObservableObject {
     @Published private(set) var unknownLampSlugs: Set<String> = []
 
     private var mappings: [MidiControlMapping] = []
-
-    // nil means that we haven't observed this control's state yet.
     private var inputStates: [UUID: Bool] = [:]
+    private var pendingLampUpdates: [String: Task<Void, Never>] = [:]
 
     private init() {}
 
@@ -76,15 +75,51 @@ final class RuleEngine: ObservableObject {
                 // Any active input keeps the lamp on.
                 newLampStates[slug] = true
             } else if states.count == lampMappings.count {
-                // Every input is known and every input is inactive.
+                // Every input is known and inactive.
                 newLampStates[slug] = false
             } else {
-                // No active input, but at least one input is unknown.
+                // At least one input is still unknown.
                 newUnknownLampSlugs.insert(slug)
             }
         }
 
+        // Send only actual, known state transitions.
+        for (slug, state) in newLampStates
+        where lampStates[slug] != state {
+            enqueueLampUpdate(slug: slug, state: state)
+        }
+
         lampStates = newLampStates
         unknownLampSlugs = newUnknownLampSlugs
+    }
+
+    private func enqueueLampUpdate(slug: String, state: Bool) {
+        let previousTask = pendingLampUpdates[slug]
+
+        let task = Task { @MainActor [weak self] in
+            // Preserve request order for this lamp.
+            await previousTask?.value
+
+            guard !Task.isCancelled else {
+                return
+            }
+
+            do {
+                try await StudioClockAPIClient.shared.setLampState(
+                    slug: slug,
+                    state: state
+                )
+            } catch {
+                print(
+                    "Failed to update Studio Clock lamp '\(slug)': \(error)"
+                )
+            }
+
+            // Keep the completed task as the chain's predecessor.
+            // The next update can safely await it.
+            _ = self
+        }
+
+        pendingLampUpdates[slug] = task
     }
 }

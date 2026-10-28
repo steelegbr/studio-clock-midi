@@ -1,34 +1,11 @@
 //
-//  StudioClockAPIError.swift
+//  StudioClockAPIClient.swift
 //  Studio Clock MIDI
 //
-//  Created by Marc Steele on 24/10/2026.
+//  Created by Marc Steele on 28/10/2026.
 //
 
-import Foundation
-
-enum StudioClockAPIError: LocalizedError {
-    case invalidBaseURL
-    case insecureConnection
-    case missingToken
-    case invalidResponse
-    case httpError(statusCode: Int, message: String)
-
-    var errorDescription: String? {
-        switch self {
-        case .invalidBaseURL:
-            return "Enter a valid Studio Clock server URL."
-        case .insecureConnection:
-            return "HTTPS is required, except for localhost during development."
-        case .missingToken:
-            return "No API token is saved. Add one in Studio Clock Settings."
-        case .invalidResponse:
-            return "The server returned an invalid response."
-        case .httpError(let statusCode, let message):
-            return "Studio Clock returned HTTP \(statusCode): \(message)"
-        }
-    }
-}
+import SwiftUI
 
 final class StudioClockAPIClient {
     static let shared = StudioClockAPIClient()
@@ -40,18 +17,29 @@ final class StudioClockAPIClient {
         self.session = session
     }
 
+    /// Tests that the server responds and accepts the saved API token.
+    func testConnection() async throws {
+        _ = try await send(path: "/api/status/")
+    }
+
+    /// Sends an authenticated request to the configured Studio Clock server.
+    @discardableResult
     func send(
         path: String,
         method: String = "GET",
         body: Data? = nil
     ) async throws -> Data {
-        let baseURLString =
+        let configuredURL =
             UserDefaults.standard.string(
                 forKey: Constants.settingsStudioClockServer
             ) ?? ""
 
+        let trimmedURL = configuredURL.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+
         guard
-            let baseURL = URL(string: baseURLString),
+            let baseURL = URL(string: trimmedURL),
             let scheme = baseURL.scheme?.lowercased(),
             let host = baseURL.host,
             !host.isEmpty,
@@ -78,12 +66,9 @@ final class StudioClockAPIClient {
             throw StudioClockAPIError.invalidBaseURL
         }
 
-        // API paths are rooted at the configured server host.
-        guard
-            let url = URL(
-                string: path,
-                relativeTo: baseURL
-            )
+        // A leading slash makes the endpoint relative to the host root,
+        // regardless of whether the configured URL has a trailing slash.
+        guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL
         else {
             throw StudioClockAPIError.invalidBaseURL
         }
@@ -97,8 +82,6 @@ final class StudioClockAPIClient {
             }
             token = savedToken
         } catch let error as StudioClockAPIError {
-            throw error
-        } catch {
             throw error
         }
 
@@ -128,7 +111,6 @@ final class StudioClockAPIClient {
         }
 
         guard (200..<300).contains(httpResponse.statusCode) else {
-            // Avoid including response bodies: they can contain sensitive data.
             let message: String
 
             switch httpResponse.statusCode {
@@ -153,5 +135,26 @@ final class StudioClockAPIClient {
         }
 
         return data
+    }
+
+    func setLampState(slug: String, state: Bool) async throws {
+        struct LampStateRequest: Encodable {
+            let state: Bool
+        }
+
+        let body = try JSONEncoder().encode(
+            LampStateRequest(state: state)
+        )
+
+        let escapedSlug =
+            slug.addingPercentEncoding(
+                withAllowedCharacters: .urlPathAllowed
+            ) ?? slug
+
+        _ = try await send(
+            path: "/api/lamp/\(escapedSlug)/state/",
+            method: "PUT",
+            body: body
+        )
     }
 }

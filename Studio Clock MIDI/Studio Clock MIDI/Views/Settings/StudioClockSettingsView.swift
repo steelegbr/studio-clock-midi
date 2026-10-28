@@ -14,6 +14,7 @@ struct StudioClockSettingsView: View {
     @State private var tokenDraft = ""
     @State private var statusMessage: String?
     @State private var isError = false
+    @State private var isTestingConnection = false
 
     private static let tokenAccount = "studio-clock-api-token"
 
@@ -21,7 +22,6 @@ struct StudioClockSettingsView: View {
         Form {
             Section("Studio Clock Server") {
                 TextField("Base URL", text: $server)
-                    .textContentType(.URL)
 
                 Text("For example: https://clock.example.org")
                     .font(.caption)
@@ -46,12 +46,29 @@ struct StudioClockSettingsView: View {
                     )
                 }
 
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(.caption)
-                        .foregroundStyle(
-                            isError ? Color.red : Color.secondary
-                        )
+                HStack {
+                    Button {
+                        Task {
+                            await testConnection()
+                        }
+                    } label: {
+                        if isTestingConnection {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text("Testing…")
+                        } else {
+                            Text("Test Connection")
+                        }
+                    }
+                    .disabled(isTestingConnection)
+
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .font(.caption)
+                            .foregroundStyle(
+                                isError ? Color.red : Color.secondary
+                            )
+                    }
                 }
             }
         }
@@ -60,7 +77,6 @@ struct StudioClockSettingsView: View {
     }
 
     private func loadSettings() {
-        // Upgrade any previously saved hostname to a full HTTPS URL.
         if !server.contains("://") {
             server = "https://" + server
         }
@@ -69,14 +85,12 @@ struct StudioClockSettingsView: View {
             if let storedToken = try KeychainStore.load(Self.tokenAccount) {
                 tokenDraft = storedToken
 
-                // Remove the old preference if it exists.
                 UserDefaults.standard.removeObject(
                     forKey: Constants.settingsStudioClockApiKey
                 )
             } else if let legacyToken = UserDefaults.standard.string(
                 forKey: Constants.settingsStudioClockApiKey
             ), !legacyToken.isEmpty {
-                // Migrate the old token to Keychain.
                 try KeychainStore.save(
                     legacyToken,
                     for: Self.tokenAccount
@@ -88,9 +102,9 @@ struct StudioClockSettingsView: View {
                 )
             }
         } catch {
-            isError = true
-            statusMessage =
+            showError(
                 "Couldn't load or migrate the API token: \(error.localizedDescription)"
+            )
         }
     }
 
@@ -104,12 +118,11 @@ struct StudioClockSettingsView: View {
         do {
             try KeychainStore.save(token, for: Self.tokenAccount)
             tokenDraft = token
-            isError = false
-            statusMessage = "API token saved securely."
+            showSuccess("API token saved securely.")
         } catch {
-            isError = true
-            statusMessage =
+            showError(
                 "Couldn't save the API token: \(error.localizedDescription)"
+            )
         }
     }
 
@@ -117,12 +130,38 @@ struct StudioClockSettingsView: View {
         do {
             try KeychainStore.delete(Self.tokenAccount)
             tokenDraft = ""
-            isError = false
-            statusMessage = "API token removed."
+            showSuccess("API token removed.")
         } catch {
-            isError = true
-            statusMessage =
+            showError(
                 "Couldn't remove the API token: \(error.localizedDescription)"
+            )
         }
+    }
+
+    @MainActor
+    private func testConnection() async {
+        isTestingConnection = true
+        statusMessage = nil
+
+        defer {
+            isTestingConnection = false
+        }
+
+        do {
+            try await StudioClockAPIClient.shared.testConnection()
+            showSuccess("Connected successfully.")
+        } catch {
+            showError(error.localizedDescription)
+        }
+    }
+
+    private func showSuccess(_ message: String) {
+        isError = false
+        statusMessage = message
+    }
+
+    private func showError(_ message: String) {
+        isError = true
+        statusMessage = message
     }
 }
