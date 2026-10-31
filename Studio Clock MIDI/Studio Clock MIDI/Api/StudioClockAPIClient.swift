@@ -21,6 +21,27 @@ final class StudioClockAPIClient {
         _ = try await send(path: "/api/status/")
     }
 
+    func setLampState(slug: String, state: Bool) async throws {
+        let lamp = Self.pathSegment(slug)
+        guard !lamp.isEmpty else {
+            throw StudioClockAPIError.invalidPath
+        }
+
+        let body = try JSONEncoder().encode(SetLampStateRequest(state: state))
+        _ = try await send(
+            path: "/api/lamp/\(lamp)/state/",
+            method: "POST",
+            body: body
+        )
+    }
+
+    private static func pathSegment(_ value: String) -> String {
+        var allowed = CharacterSet.alphanumerics
+        allowed.insert(charactersIn: "-._~")
+
+        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+    }
+
     @discardableResult
     func send(
         path: String,
@@ -136,4 +157,8 @@ final class StudioClockAPIClient {
 
         return data
     }
+}
+
+private struct SetLampStateRequest: Encodable {
+    let state: Bool
 }
