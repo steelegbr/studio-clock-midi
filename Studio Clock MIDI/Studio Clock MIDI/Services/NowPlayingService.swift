@@ -37,39 +37,49 @@ final class NowPlayingService: ObservableObject {
     }
 
     private func resolveConfiguredFileURL() throws -> URL {
-        guard let bookmark = UserDefaults.standard.data(
+        guard
+            let bookmark = UserDefaults.standard.data(
                 forKey: Constants.settingsNowPlayingBookmark
-            ) else {
+            )
+        else {
             throw CocoaError(.fileReadNoPermission)
         }
 
-#if os(macOS)
-        var isStale = false
+        #if os(macOS)
+            guard url.startAccessingSecurityScopedResource() else {
+                throw CocoaError(.fileReadNoPermission)
+            }
+            var isStale = false
+            let url: URL
+            do {
+                url = try URL(
+                    resolvingBookmarkData: bookmark,
+                    options: .withSecurityScope,
+                    relativeTo: nil,
+                    bookmarkDataIsStale: &isStale
+                )
+            } catch {
+                // Bookmark resolution itself does not require starting access.
+                throw error
+            }
 
-        let url = try URL(
-            resolvingBookmarkData: bookmark,
-            options: .withSecurityScope,
-            relativeTo: nil,
-            bookmarkDataIsStale: &isStale
-        )
+            if isStale {
+                let refreshedBookmark = try url.bookmarkData(
+                    options: .withSecurityScope,
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                )
 
-        if isStale {
-            let refreshedBookmark = try url.bookmarkData(
-                options: .withSecurityScope,
-                includingResourceValuesForKeys: nil,
-                relativeTo: nil
-            )
+                UserDefaults.standard.set(
+                    refreshedBookmark,
+                    forKey: Constants.settingsNowPlayingBookmark
+                )
+            }
 
-            UserDefaults.standard.set(
-                refreshedBookmark,
-                forKey: Constants.settingsNowPlayingBookmark
-            )
-        }
-
-        return url
-#else
-        throw CocoaError(.featureUnsupported)
-#endif
+            return url
+        #else
+            throw CocoaError(.featureUnsupported)
+        #endif
     }
 
     private init() {}
@@ -89,14 +99,16 @@ final class NowPlayingService: ObservableObject {
         // Start security-scoped access once for the life of the watcher.
         // The URL should come from an NSOpenPanel and be stored in
         // UserDefaults with a security-scoped bookmark for long-term use.
-#if os(macOS)
-        isAccessingSecurityScope = url.startAccessingSecurityScopedResource()
-        guard isAccessingSecurityScope else {
-            fileURL = nil
-            lastError = "Couldn't access the selected playout file. Choose it again."
-            return
-        }
-#endif
+        #if os(macOS)
+            isAccessingSecurityScope =
+                url.startAccessingSecurityScopedResource()
+            guard isAccessingSecurityScope else {
+                fileURL = nil
+                lastError =
+                    "Couldn't access the selected playout file. Choose it again."
+                return
+            }
+        #endif
 
         isWatching = true
         lastError = nil
@@ -124,9 +136,9 @@ final class NowPlayingService: ObservableObject {
         sendTask = nil
 
         #if os(macOS)
-        if isAccessingSecurityScope, let fileURL {
-            fileURL.stopAccessingSecurityScopedResource()
-        }
+            if isAccessingSecurityScope, let fileURL {
+                fileURL.stopAccessingSecurityScopedResource()
+            }
         #endif
 
         isAccessingSecurityScope = false
