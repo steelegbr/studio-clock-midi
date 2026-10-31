@@ -10,6 +10,8 @@ import Foundation
 struct Constants {
     static let settingsMidiDeviceId = "MidiDeviceId"
     static let settingsNowPlayingBookmark = "nowPlayingBookmark"
+    static let settingsNowPlayingStation = "nowPlayingStation"
+    static let settingsWatchFile = "nowPlayingFileURL"
     static let settingsStudioClockApiKey = "StudioClockApiKey"
     static let settingsStudioClockServer = "StudioClockServer"
 }

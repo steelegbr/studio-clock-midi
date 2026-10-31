@@ -32,15 +32,18 @@ final class NowPlayingService: ObservableObject {
         )?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
+    private var configuredFileURL: URL? {
+        try? resolveConfiguredFileURL()
+    }
+
     private func resolveConfiguredFileURL() throws -> URL {
-        guard
-            let bookmark = UserDefaults.standard.data(
+        guard let bookmark = UserDefaults.standard.data(
                 forKey: Constants.settingsNowPlayingBookmark
-            )
-        else {
+            ) else {
             throw CocoaError(.fileReadNoPermission)
         }
 
+#if os(macOS)
         var isStale = false
 
         let url = try URL(
@@ -64,6 +67,9 @@ final class NowPlayingService: ObservableObject {
         }
 
         return url
+#else
+        throw CocoaError(.featureUnsupported)
+#endif
     }
 
     private init() {}
@@ -83,7 +89,14 @@ final class NowPlayingService: ObservableObject {
         // Start security-scoped access once for the life of the watcher.
         // The URL should come from an NSOpenPanel and be stored in
         // UserDefaults with a security-scoped bookmark for long-term use.
+#if os(macOS)
         isAccessingSecurityScope = url.startAccessingSecurityScopedResource()
+        guard isAccessingSecurityScope else {
+            fileURL = nil
+            lastError = "Couldn't access the selected playout file. Choose it again."
+            return
+        }
+#endif
 
         isWatching = true
         lastError = nil
@@ -110,9 +123,11 @@ final class NowPlayingService: ObservableObject {
         sendTask?.cancel()
         sendTask = nil
 
+        #if os(macOS)
         if isAccessingSecurityScope, let fileURL {
             fileURL.stopAccessingSecurityScopedResource()
         }
+        #endif
 
         isAccessingSecurityScope = false
         fileURL = nil

@@ -6,17 +6,22 @@
 //
 
 import SwiftUI
+#if os(macOS)
 import UniformTypeIdentifiers
+#endif
 
 struct NowPlayingSettingsView: View {
     @AppStorage(Constants.settingsNowPlayingStation)
     private var stationName = ""
 
+#if os(macOS)
     @State private var selectedFileURL: URL?
     @State private var isChoosingFile = false
     @State private var fileError: String?
+#endif
 
     var body: some View {
+#if os(macOS)
         Form {
             Section("Now Playing") {
                 TextField("Station name", text: $stationName)
@@ -76,8 +81,17 @@ struct NowPlayingSettingsView: View {
         .onAppear {
             restoreBookmark()
         }
+#else
+        Form {
+            Section("Now Playing") {
+                Text("Watching a playout file is available in the macOS app.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+#endif
     }
 
+#if os(macOS)
     private func handleFileSelection(
         _ result: Result<[URL], Error>
     ) {
@@ -95,11 +109,6 @@ struct NowPlayingSettingsView: View {
             UserDefaults.standard.set(
                 bookmark,
                 forKey: Constants.settingsNowPlayingBookmark
-            )
-
-            UserDefaults.standard.set(
-                url,
-                forKey: Constants.settingsWatchFile
             )
 
             selectedFileURL = url
@@ -121,9 +130,6 @@ struct NowPlayingSettingsView: View {
                 forKey: Constants.settingsNowPlayingBookmark
             )
         else {
-            selectedFileURL = UserDefaults.standard.url(
-                forKey: Constants.settingsWatchFile
-            )
             return
         }
 
@@ -156,4 +162,5 @@ struct NowPlayingSettingsView: View {
                 "Couldn't restore the saved file access. Choose the file again."
         }
     }
+#endif
 }
