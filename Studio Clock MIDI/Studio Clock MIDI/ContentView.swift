@@ -16,6 +16,13 @@ struct ContentView: View {
                         systemImage: "point.3.connected.trianglepath.dotted"
                     )
                 }
+            NowPlayingStatusView()
+                .tabItem {
+                    Label(
+                        "Now Playing",
+                        systemImage: "radio"
+                    )
+                }
         }
     }
 }

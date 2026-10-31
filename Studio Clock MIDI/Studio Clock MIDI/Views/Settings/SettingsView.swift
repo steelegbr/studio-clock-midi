@@ -13,6 +13,9 @@ struct SettingsView: View {
             Tab("Studio Clock", systemImage: "clock") {
                 StudioClockSettingsView()
             }
+            Tab("Now Playing", systemImage: "radio") {
+                NowPlayingSettingsView()
+            }
         }
         .scenePadding()
     }
