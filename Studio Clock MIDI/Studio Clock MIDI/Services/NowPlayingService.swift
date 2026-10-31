@@ -46,22 +46,13 @@ final class NowPlayingService: ObservableObject {
         }
 
         #if os(macOS)
-            guard url.startAccessingSecurityScopedResource() else {
-                throw CocoaError(.fileReadNoPermission)
-            }
             var isStale = false
-            let url: URL
-            do {
-                url = try URL(
-                    resolvingBookmarkData: bookmark,
-                    options: .withSecurityScope,
-                    relativeTo: nil,
-                    bookmarkDataIsStale: &isStale
-                )
-            } catch {
-                // Bookmark resolution itself does not require starting access.
-                throw error
-            }
+            let url = try URL(
+                resolvingBookmarkData: bookmark,
+                options: .withSecurityScope,
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
 
             if isStale {
                 let refreshedBookmark = try url.bookmarkData(
