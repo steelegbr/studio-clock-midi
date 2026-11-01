@@ -30,7 +30,7 @@ final class StudioClockAPIClient {
         let body = try JSONEncoder().encode(SetLampStateRequest(state: state))
         _ = try await send(
             path: "/api/lamp/\(lamp)/state/",
-            method: "POST",
+            method: "PUT",
             body: body
         )
     }
